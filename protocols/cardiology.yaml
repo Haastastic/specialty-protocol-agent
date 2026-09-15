@@ -1,0 +1,23 @@
+specialty: cardiology
+
+scheduling_rules:
+  - "New patient visits require 45 minutes; established follow-ups require 20 minutes."
+  - "Post-procedure follow-ups (stent, ablation, pacemaker) must be scheduled within 1-2 weeks of the procedure."
+  - "Stress test and echocardiogram appointments are scheduled separately from the initial consult and require pre-appointment fasting instructions to be communicated."
+  - "Patients referred urgently by a primary care provider for chest pain evaluation should be offered the next available slot, not routine scheduling."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield, Medicare."
+  - "Stress tests and echocardiograms typically require prior authorization — flag this to the patient and confirm authorization status before booking when possible."
+
+faq:
+  - question: "Do I need to stop any medications before my stress test?"
+    answer: "Possibly — patients should not adjust medication without provider guidance, so route this question to the clinical team rather than answering directly."
+  - question: "How long does a routine follow-up take?"
+    answer: "Established patient follow-ups are typically 20 minutes."
+
+escalation_triggers:
+  - "Chest pain, pressure, or tightness reported during the call"
+  - "Shortness of breath at rest"
+  - "Reported fainting or loss of consciousness"
+  - "Irregular heartbeat with dizziness"
