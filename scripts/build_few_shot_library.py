@@ -33,7 +33,9 @@ def main():
             all_scenarios.extend(json.load(f))
 
     if not all_scenarios:
-        console.print(f"[red]No generated scenarios found in {args.input_dir}. Run generate_synthetic_data.py first.[/red]")
+        console.print(
+            f"[red]No generated scenarios found in {args.input_dir}. Run generate_synthetic_data.py first.[/red]"
+        )
         return
 
     console.print(f"Scoring and distilling {len(all_scenarios)} scenarios...")
