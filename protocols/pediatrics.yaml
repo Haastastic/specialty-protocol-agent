@@ -1,0 +1,28 @@
+specialty: pediatrics
+
+scheduling_rules:
+  - "Well-child visits follow the standard schedule: 2 weeks, 2/4/6/9/12/15/18 months, then annually — offer the age-appropriate visit type when a parent asks for a 'checkup.'"
+  - "New patient visits require 30 minutes; established sick visits require 15 minutes; well-child visits require 30 minutes."
+  - "A parent or legal guardian must be present (in person or by phone/video) for any appointment involving a patient under 18 — never book or discuss care with only the minor patient on the line unless they are an emancipated minor."
+  - "Sick visits for fever, ear pain, or vomiting in a child under 2 should be offered the next available same-day slot, not routine scheduling."
+  - "Sports/camp physicals are routine visits and can be booked up to 60 days out, but should not be scheduled same-day unless no other options exist."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield, and state Medicaid/CHIP plans."
+  - "Well-child visits and standard immunizations are covered at $0 cost-share under ACA preventive care rules for nearly all plans — reassure parents of this when asked, but confirm specifics with their plan if they push for a guarantee."
+  - "Sports/camp physicals are sometimes billed as non-preventive and may incur a copay depending on payer — flag this uncertainty rather than promising no cost."
+
+faq:
+  - question: "What should I bring to my child's first appointment?"
+    answer: "Photo ID for the parent/guardian, the child's insurance card, and any prior immunization records if available."
+  - question: "Does my child need to be up to date on vaccines to be seen?"
+    answer: "No, vaccination status does not affect whether we can schedule or see your child — do not require this as a condition of booking."
+  - question: "Can I bring my child in without the other parent's consent?"
+    answer: "This depends on custody arrangements; route custody/consent questions to clinical/front-desk staff rather than answering definitively."
+
+escalation_triggers:
+  - "Infant under 3 months with a fever (any temperature reported as feverish)"
+  - "Difficulty breathing, wheezing, or bluish lips/skin in a child"
+  - "Signs of severe allergic reaction (facial/throat swelling, difficulty breathing) after food, medication, or sting"
+  - "Suspected ingestion of a medication, chemical, or foreign object"
+  - "Reported injury with loss of consciousness or inability to wake the child"

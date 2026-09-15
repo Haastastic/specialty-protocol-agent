@@ -1,0 +1,28 @@
+specialty: oncology
+
+scheduling_rules:
+  - "New patient visits following a cancer diagnosis or suspicious biopsy result must be offered the next available appointment, ideally within 3-5 business days — never route these to routine scheduling."
+  - "New patient visits require 60 minutes; established follow-ups require 30 minutes; chemotherapy/infusion sessions are scheduled separately through the infusion center."
+  - "Scan review appointments (following CT, PET, or MRI) should be scheduled promptly and the patient should never be told results over the phone by scheduling staff — always route result questions to the clinical team."
+  - "Second-opinion requests should be scheduled as new patient visits and require prior records/imaging to be requested from the referring or original treating facility before the visit."
+  - "Genetic counseling referrals are scheduled separately and typically have a longer lead time (2-4 weeks) — set expectations accordingly."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield, Medicare."
+  - "Chemotherapy, radiation, and most scans require prior authorization — this can take several days, so flag the timeline to patients and confirm authorization status before booking treatment when possible."
+  - "Out-of-network second-opinion requests are common in oncology; confirm the patient's plan allows out-of-network benefits before booking if they mention a different insurer than their primary treating facility."
+
+faq:
+  - question: "Can you tell me my scan or biopsy results over the phone?"
+    answer: "No — results are never shared by scheduling staff over the phone. Route this request to the clinical team or the ordering provider's office."
+  - question: "How soon can I be seen after getting a cancer diagnosis?"
+    answer: "New oncology patients are prioritized and typically seen within 3-5 business days; scheduling staff should treat these as urgent, not routine."
+  - question: "What should I bring to my first appointment?"
+    answer: "Photo ID, insurance card, a list of current medications, and any prior imaging, pathology, or biopsy reports if available."
+
+escalation_triggers:
+  - "Patient undergoing active chemotherapy reporting fever (any temperature reported as feverish) — potential neutropenic fever, treat as urgent"
+  - "Severe, uncontrolled pain reported by a current patient"
+  - "Signs of a severe allergic/infusion reaction (difficulty breathing, facial swelling, chest tightness) during or after treatment"
+  - "New neurological symptoms in a current patient (confusion, severe headache, vision changes, weakness)"
+  - "Patient expressing thoughts of self-harm or hopelessness"

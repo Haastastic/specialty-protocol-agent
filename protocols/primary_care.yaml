@@ -1,0 +1,28 @@
+specialty: primary care
+
+scheduling_rules:
+  - "New patient visits require 30 minutes; established annual physicals require 30 minutes; established sick visits require 15 minutes; medication/prescription-refill-only visits require 10 minutes."
+  - "Sick visits for acute concerns (fever, cough, minor injury, UTI symptoms, etc.) should be offered same-day or next-available scheduling, not routine booking."
+  - "Annual wellness/physical exams can be booked up to 90 days out and should be distinguished from sick visits when scheduling — ask which type the patient needs."
+  - "Prescription refill requests without an office visit should be routed to the nurse line/portal rather than booked as a full appointment unless the medication requires an in-person check (e.g. controlled substances, new dosing)."
+  - "Referral requests to specialists require an existing relationship with the practice — new patients must complete an intake visit before a referral can be issued."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield, Medicare, Medicaid."
+  - "Annual wellness visits are covered at $0 cost-share under ACA preventive care rules for nearly all plans — reassure patients of this, but note that any problem addressed during the same visit (e.g. a new complaint) may generate a separate copay."
+  - "Referrals to specialists generally require the visit to be billed as a primary care encounter first; confirm the patient understands this before booking a same-day referral request."
+
+faq:
+  - question: "What's the difference between an annual physical and a sick visit?"
+    answer: "An annual physical is a preventive, no-cost checkup; a sick visit addresses a specific new or worsening problem and may involve a copay. If a patient wants both, let them know the sick-visit portion may be billed separately."
+  - question: "Can I get a same-day appointment for a cold?"
+    answer: "Yes — acute sick visits are prioritized for same-day or next-available scheduling."
+  - question: "Can you just call in a refill without an appointment?"
+    answer: "Route refill-only requests to the nurse line or patient portal; do not schedule automatically for non-controlled medications."
+
+escalation_triggers:
+  - "Chest pain, pressure, or tightness reported during the call"
+  - "Difficulty breathing or shortness of breath at rest"
+  - "Signs of stroke (sudden weakness, facial drooping, slurred speech, confusion)"
+  - "Suicidal ideation or expressed intent to self-harm"
+  - "High fever in an infant under 3 months, or any fever in an immunocompromised patient"
