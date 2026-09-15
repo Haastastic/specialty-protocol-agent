@@ -1,0 +1,25 @@
+specialty: dermatology
+
+scheduling_rules:
+  - "New patient visits require 30 minutes; established patient visits require 15 minutes."
+  - "Cosmetic consultations (Botox, fillers, laser) are cash-pay and scheduled separately from medical dermatology visits — always ask which type before booking."
+  - "Suspicious mole or lesion checks should be prioritized for the next available appointment, not routine scheduling."
+  - "Biopsy follow-up appointments must be scheduled within 2 weeks of the biopsy date."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield."
+  - "Cosmetic procedures are never covered by insurance regardless of payer — always clarify this before booking a cosmetic consult."
+  - "Medicare covers medically necessary dermatology visits (e.g. suspicious lesions) but not routine cosmetic skin checks."
+
+faq:
+  - question: "What should I bring to my first appointment?"
+    answer: "Photo ID, insurance card, and a list of current medications."
+  - question: "Can I get a same-day appointment for a rash?"
+    answer: "Same-day slots are limited and prioritized for urgent concerns like suspected infections or severe reactions."
+  - question: "Do you treat acne?"
+    answer: "Yes, acne is a routine visit type, no urgent priority needed."
+
+escalation_triggers:
+  - "Rapidly spreading rash with fever"
+  - "Signs of severe allergic reaction (swelling of face/throat, difficulty breathing)"
+  - "Suspected melanoma with rapid change in size, color, or bleeding"
