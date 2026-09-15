@@ -45,14 +45,21 @@ def generate_scenario(specialty: str, intent: str, model: str = "claude-sonnet-4
 
     response = client.messages.create(
         model=model,
-        max_tokens=500,
+        max_tokens=1024,
         system=GENERATOR_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )
     raw = "".join(b.text for b in response.content if b.type == "text")
 
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+        if cleaned.endswith("```"):
+            cleaned = cleaned.rsplit("```", 1)[0]
+        cleaned = cleaned.strip()
+
     try:
-        scenario = json.loads(raw)
+        scenario = json.loads(cleaned)
     except json.JSONDecodeError:
         scenario = {
             "id": f"unparsed_{uuid.uuid4().hex[:8]}",
