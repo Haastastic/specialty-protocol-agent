@@ -4,3 +4,4 @@ __pycache__/
 data/synthetic_transcripts/*.json
 !data/synthetic_transcripts/.gitkeep
 .venv/
+.claude/
