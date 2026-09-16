@@ -3,10 +3,10 @@
 from src.protocol_agent.retrieval import ProtocolIndex
 
 
-def test_index_loads_both_specialties():
+def test_index_loads_all_specialties():
     index = ProtocolIndex("protocols")
-    assert "dermatology" in index.specialties
-    assert "cardiology" in index.specialties
+    expected = {"dermatology", "cardiology", "pediatrics", "orthopedics", "oncology", "primary care"}
+    assert expected.issubset(set(index.specialties))
 
 
 def test_retrieve_returns_relevant_chunks():
@@ -20,4 +20,5 @@ def test_retrieve_returns_relevant_chunks():
 def test_specialty_detection():
     index = ProtocolIndex("protocols")
     assert index.detect_specialty("I need a cardiology appointment") == "cardiology"
+    assert index.detect_specialty("I'd like to book a primary care visit") == "primary care"
     assert index.detect_specialty("just a general question") is None

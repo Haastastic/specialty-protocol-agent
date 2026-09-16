@@ -1,0 +1,28 @@
+specialty: orthopedics
+
+scheduling_rules:
+  - "New patient visits require 30 minutes; established follow-ups require 15 minutes; post-op follow-ups require 20 minutes."
+  - "Suspected fracture, dislocation, or acute injury with inability to bear weight should be offered the next available same-day or urgent-care slot, not routine scheduling — if the office cannot see them same-day, direct to urgent care or ED."
+  - "Post-surgical follow-ups (joint replacement, ACL repair, fracture fixation) must be scheduled per the surgeon's specific post-op timeline (typically 2 weeks, 6 weeks, 3 months) — check the surgical note rather than defaulting to standard follow-up spacing."
+  - "MRI and imaging orders are scheduled through imaging separately from the clinic visit and often require prior authorization — flag this timeline to the patient."
+  - "Physical therapy referrals should be scheduled to start within 1-2 weeks of the referring visit when possible."
+
+payer_logic:
+  - "In-network payers: Aetna, Cigna, United Healthcare, Blue Cross Blue Shield, Medicare, Workers' Compensation (separate intake process)."
+  - "Workers' compensation cases require the claim number and employer information before scheduling — do not book as a standard visit without this."
+  - "MRI, CT, and most injections (cortisone, etc.) typically require prior authorization — confirm authorization status before booking when possible."
+
+faq:
+  - question: "Do I need a referral to see an orthopedic specialist?"
+    answer: "Depends on the plan — many PPOs do not require one, but HMO plans usually do. When unsure, tell the patient to check with their insurer, don't guarantee either way."
+  - question: "How soon can I be seen after a work injury?"
+    answer: "Workers' compensation injuries are generally prioritized, but scheduling requires the claim number and employer information first."
+  - question: "Will I need surgery for my knee pain?"
+    answer: "This is a clinical determination that requires an evaluation — do not speculate on treatment or surgical necessity over the phone."
+
+escalation_triggers:
+  - "Visible deformity, open fracture, or bone protruding through skin"
+  - "Loss of sensation, numbness, or inability to move a limb after injury"
+  - "Signs of compartment syndrome (severe, worsening pain disproportionate to injury, tight/swollen limb)"
+  - "Suspected spinal injury after trauma (numbness, weakness, loss of bladder/bowel control)"
+  - "Post-surgical site with fever, spreading redness, or wound drainage suggesting infection"
