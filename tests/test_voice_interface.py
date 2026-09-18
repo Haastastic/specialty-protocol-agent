@@ -108,6 +108,43 @@ def test_pipeline_runs_a_turn_and_updates_session():
     assert pipeline.latency.turns[0].total_ms() is not None
 
 
+class _FailingTTS(MockTTS):
+    async def synthesize(self, text: str):
+        raise RuntimeError("402 Payment Required")
+        yield  # unreachable; makes this an async generator like the real TTS
+
+
+def test_pipeline_tts_failure_is_logged_and_ends_the_turn(caplog):
+    stt = MockSTT(["book me an appointment"], frames_per_utterance=1, recognition_delay_s=0.0)
+    pipeline = VoiceCallPipeline(agent=StubAgent(), stt=stt, tts=_FailingTTS())
+
+    async def run():
+        await pipeline.handle_audio_frame(b"")
+        return await asyncio.wait_for(pipeline.outbound.get(), timeout=2)
+
+    event = asyncio.run(run())
+
+    assert event.kind == "turn_done"
+    assert "Turn 1 failed" in caplog.text
+    assert "402 Payment Required" in caplog.text
+
+
+def test_pipeline_agent_failure_is_logged_and_ends_the_turn(caplog):
+    class BoomAgent:
+        def respond(self, session, user_utterance):
+            raise RuntimeError("anthropic down")
+
+    stt = MockSTT(["hi"], frames_per_utterance=1, recognition_delay_s=0.0)
+    pipeline = VoiceCallPipeline(agent=BoomAgent(), stt=stt, tts=MockTTS())
+
+    async def run():
+        await pipeline.handle_audio_frame(b"")
+        return await asyncio.wait_for(pipeline.outbound.get(), timeout=2)
+
+    assert asyncio.run(run()).kind == "turn_done"
+    assert "anthropic down" in caplog.text
+
+
 class _SequencedStubAgent:
     """Appends user/assistant messages the same way ProtocolAgent.respond() does (user turn
     before the "network" delay, assistant turn after) so a serialization race shows up as
