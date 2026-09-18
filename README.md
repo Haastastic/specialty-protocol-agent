@@ -151,6 +151,12 @@ Notes:
 - Point the Twilio number's Voice webhook at `POST https://<service-url>/twiml`. `GET /health`
   is unauthenticated and does no work.
 
+### Try it
+
+Call the live demo line: **+1 (816) 704-6267**. It's a portfolio demo on a small budget, so it may be
+offline at any time, and it only handles the synthetic scenarios and mock scheduling
+backend (see the disclaimer below). Don't share real personal or health information on the call.
+
 ## Disclaimer
 
 Portfolio demo using synthetic scenarios and a mock scheduling backend. Not connected to real
