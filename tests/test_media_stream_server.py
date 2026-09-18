@@ -1,5 +1,6 @@
 """Wire-protocol tests for media_stream_server.py using FastAPI's TestClient — no real socket, no
-Twilio account, no Anthropic API call (agent + STT factories are monkeypatched)."""
+Twilio account, no Anthropic/Deepgram/ElevenLabs API calls (agent, STT, and TTS factories are all
+monkeypatched to stubs/mocks)."""
 
 import base64
 import json
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from src.voice_interface import media_stream_server
 from src.voice_interface.stt import MockSTT
+from src.voice_interface.tts import MockTTS
 
 
 class _StubAgent:
@@ -31,6 +33,7 @@ def test_media_stream_round_trip(monkeypatch):
         "_stt_factory",
         lambda: MockSTT(["hello"], frames_per_utterance=1, recognition_delay_s=0.0),
     )
+    monkeypatch.setattr(media_stream_server, "_tts_factory", lambda: MockTTS())
 
     client = TestClient(media_stream_server.app)
     with client.websocket_connect("/media-stream") as ws:

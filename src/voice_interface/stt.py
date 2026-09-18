@@ -5,8 +5,12 @@ so the rest of the pipeline still exercises a real partial->final recognition ca
 bytes still flow through media_stream_server.py unchanged; only the transcription is scripted."""
 
 import asyncio
+import json
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+import websockets
 
 
 @dataclass
@@ -69,3 +73,88 @@ class MockSTT(SpeechToText):
     @property
     def exhausted(self) -> bool:
         return self._cursor >= len(self.scripted_lines)
+
+
+_DEEPGRAM_WS_URL = "wss://api.deepgram.com/v1/listen"
+
+
+class DeepgramSTT(SpeechToText):
+    """Real streaming STT via Deepgram's WebSocket API
+    (https://developers.deepgram.com/reference/speech-to-text-api/listen-streaming), talked to
+    directly over its documented wire protocol (query-param config + JSON transcript messages)
+    rather than through deepgram-sdk — that SDK's client surface has changed across major versions
+    and this repo has no live Deepgram account to test against, so the wire contract is the more
+    stable thing to depend on.
+
+    feed_audio() is fire-and-forget from the caller's perspective (send this frame, immediately
+    check for any transcript that has already arrived) since Deepgram delivers transcripts
+    asynchronously and not necessarily one-per-frame — a queue absorbs the mismatch between "audio
+    frame in" and "transcript event out" that MockSTT's synchronous scripted-lines model doesn't
+    have to deal with.
+    """
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str = "nova-3",
+        language: str = "en-US",
+    ):
+        self.api_key = api_key or os.environ.get("DEEPGRAM_API_KEY")
+        if not self.api_key:
+            raise RuntimeError("DEEPGRAM_API_KEY not set.")
+        self.model = model
+        self.language = language
+        self._ws: websockets.WebSocketClientProtocol | None = None
+        self._recv_task: asyncio.Task | None = None
+        self._events: asyncio.Queue[TranscriptEvent] = asyncio.Queue()
+
+    async def _ensure_connected(self) -> None:
+        if self._ws is not None:
+            return
+        params = (
+            "encoding=mulaw&sample_rate=8000&channels=1"
+            f"&model={self.model}&language={self.language}"
+            "&interim_results=true&punctuate=true"
+        )
+        # extra_headers is the websockets<14 API this repo pins against (see requirements.txt);
+        # a later websockets upgrade renamed this to additional_headers.
+        self._ws = await websockets.connect(
+            f"{_DEEPGRAM_WS_URL}?{params}",
+            extra_headers={"Authorization": f"Token {self.api_key}"},
+        )
+        self._recv_task = asyncio.create_task(self._recv_loop())
+
+    async def _recv_loop(self) -> None:
+        assert self._ws is not None
+        async for raw in self._ws:
+            message = json.loads(raw)
+            alternatives = message.get("channel", {}).get("alternatives")
+            if not alternatives:
+                continue
+            transcript = alternatives[0].get("transcript", "")
+            if not transcript:
+                continue
+            await self._events.put(
+                TranscriptEvent(text=transcript, is_final=bool(message.get("is_final")))
+            )
+
+    async def feed_audio(self, audio_chunk: bytes) -> TranscriptEvent | None:
+        await self._ensure_connected()
+        assert self._ws is not None
+        await self._ws.send(audio_chunk)
+        try:
+            return self._events.get_nowait()
+        except asyncio.QueueEmpty:
+            return None
+
+    def reset(self) -> None:
+        pass  # Deepgram's connection is continuous across utterances; nothing to clear per-turn
+
+    async def close(self) -> None:
+        """Not part of the SpeechToText ABC (MockSTT has no connection to tear down) — callers
+        that hold a real connection, like media_stream_server.py, should call this via
+        getattr(stt, "close", None) when the call ends."""
+        if self._recv_task is not None:
+            self._recv_task.cancel()
+        if self._ws is not None:
+            await self._ws.close()

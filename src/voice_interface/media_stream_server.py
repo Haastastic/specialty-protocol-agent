@@ -3,17 +3,16 @@ VoiceCallPipeline. This is the one file in this package that speaks Twilio's act
 schema (https://www.twilio.com/docs/voice/media-streams/websocket-messages) — pipeline.py, stt.py
 and tts.py are all transport-agnostic.
 
-_stt_factory() intentionally raises: MockSTT is driven by a pre-scripted list of caller lines,
-which only makes sense for the local simulate_call.py harness — there's no way to script what a
-real caller on a live Twilio number will say. Point this at a real streaming-STT adapter
-(implementing SpeechToText from stt.py) before running this server against a live call. MockTTS
-is left as the default since a missing TTS just means the caller hears silence rather than the
-server being unable to function at all; swap in a real TextToSpeech adapter the same way.
+_stt_factory()/_tts_factory() default to the real DeepgramSTT/ElevenLabsTTS adapters, which need
+DEEPGRAM_API_KEY/ELEVENLABS_API_KEY (and ELEVENLABS_VOICE_ID) set — see .env.example. Swap either
+factory back to MockSTT/MockTTS for local testing without vendor accounts (simulate_call.py does
+this already).
 """
 
 import asyncio
 import base64
 import json
+import os
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
@@ -21,8 +20,8 @@ from fastapi.responses import Response
 from src.protocol_agent.agent import ProtocolAgent
 
 from .pipeline import RespondingAgent, VoiceCallPipeline
-from .stt import SpeechToText
-from .tts import MockTTS, TextToSpeech
+from .stt import DeepgramSTT, SpeechToText
+from .tts import ElevenLabsTTS, TextToSpeech
 from .twiml import stream_twiml
 
 app = FastAPI()
@@ -38,15 +37,11 @@ def _agent_singleton() -> RespondingAgent:
 
 
 def _stt_factory() -> SpeechToText:
-    raise NotImplementedError(
-        "No real speech-to-text adapter is wired up. See README 'Voice interface' section: "
-        "implement SpeechToText (stt.py) for your vendor and replace this factory before running "
-        "against a live Twilio number."
-    )
+    return DeepgramSTT()
 
 
 def _tts_factory() -> TextToSpeech:
-    return MockTTS()
+    return ElevenLabsTTS(voice_id=os.environ["ELEVENLABS_VOICE_ID"])
 
 
 @app.post("/twiml")
@@ -94,6 +89,10 @@ async def media_stream(websocket: WebSocket) -> None:
     finally:
         if outbound_task is not None:
             outbound_task.cancel()
+        if pipeline is not None:
+            stt_close = getattr(pipeline.stt, "close", None)
+            if stt_close is not None:
+                await stt_close()
 
 
 async def _drain_outbound(websocket: WebSocket, pipeline: VoiceCallPipeline, stream_sid: str) -> None:

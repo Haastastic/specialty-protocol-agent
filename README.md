@@ -74,21 +74,25 @@ repo's `scenarios/*.yaml` — they can be copied directly into that folder.
 touching it — same `respond(session, user_utterance) -> str` contract `run_conversation()` already
 uses above, just called per recognized utterance instead of per scripted string.
 
-**What's real vs. mocked.** This repo has no Twilio account and no STT/TTS vendor keys, only
-`ANTHROPIC_API_KEY`. So:
+**What's real vs. mocked.** Speech-to-text and text-to-speech are pluggable (`SpeechToText`/
+`TextToSpeech` in `stt.py`/`tts.py`):
 
 - `media_stream_server.py` implements Twilio's actual [Media Streams wire
   protocol](https://www.twilio.com/docs/voice/media-streams/websocket-messages) (`start`/`media`/
-  `stop` inbound, `media`/`mark`/`clear` outbound) over a FastAPI WebSocket — this part is
-  protocol-correct and swap-in-ready for a live Twilio number.
-- Speech-to-text and text-to-speech are pluggable (`SpeechToText`/`TextToSpeech` in `stt.py`/
-  `tts.py`) and default to mocks — `MockSTT` is driven by a pre-scripted list of caller lines
-  instead of doing real audio decoding, `MockTTS` produces placeholder audio sized/timed like real
-  8kHz mulaw instead of doing real synthesis. This keeps the whole pipeline runnable and testable
-  with zero external services beyond Anthropic. Swap in a real vendor adapter by implementing
-  either interface — nothing else changes.
+  `stop` inbound, `media`/`mark`/`clear` outbound) over a FastAPI WebSocket, and defaults to real
+  vendor adapters: `DeepgramSTT` (streaming transcription over Deepgram's WebSocket API) and
+  `ElevenLabsTTS` (streaming synthesis over ElevenLabs' REST endpoint, requested directly in
+  Twilio's 8kHz mulaw wire format). These need `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY`, and
+  `ELEVENLABS_VOICE_ID` set (see `.env.example`).
+- `scripts/simulate_call.py` uses `MockSTT`/`MockTTS` instead — `MockSTT` is driven by a
+  pre-scripted list of caller lines rather than real audio decoding, `MockTTS` produces placeholder
+  audio sized/timed like real 8kHz mulaw rather than doing real synthesis. This keeps the local
+  harness runnable and testable with zero external services beyond Anthropic. Swap either factory
+  in `media_stream_server.py` back to the mocks for testing the Twilio wiring itself without vendor
+  accounts.
 
-**Run it end to end** (uses the real `ProtocolAgent`, same `ANTHROPIC_API_KEY` as above):
+**Run it end to end locally** (uses the real `ProtocolAgent`, same `ANTHROPIC_API_KEY` as above,
+mocked STT/TTS):
 
 ```bash
 python scripts/simulate_call.py
@@ -97,10 +101,10 @@ python scripts/simulate_call.py
 Prints a scripted call transcript, including a deliberate barge-in demonstration, plus a per-stage
 latency report checked against budget (`src/voice_interface/latency.py`).
 
-**Pointing a real Twilio number at it:** run `uvicorn src.voice_interface.media_stream_server:app`,
-point the number's voice webhook at `POST /twiml`, and replace `_stt_factory()` in
-`media_stream_server.py` with a real `SpeechToText` adapter first — it raises `NotImplementedError`
-by default since `MockSTT`'s scripted-lines approach can't transcribe a real caller.
+**Pointing a real Twilio number at it:** set `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY`, and
+`ELEVENLABS_VOICE_ID` in `.env`, run `uvicorn src.voice_interface.media_stream_server:app`
+(tunnel it with e.g. `ngrok http 8000` for local testing, since Twilio needs a public HTTPS/WSS
+endpoint), then point the number's Voice webhook at `POST https://<your-host>/twiml`.
 
 ## Disclaimer
 
