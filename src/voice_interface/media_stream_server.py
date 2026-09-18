@@ -62,8 +62,8 @@ def _signature_ok(headers, host: str, path: str, params: dict[str, str] | None =
     return is_valid_signature(auth_token, headers.get("x-twilio-signature"), urls, params)
 
 
-@app.get("/healthz")
-async def healthz() -> dict[str, str]:
+@app.get("/health")
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 

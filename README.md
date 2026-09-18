@@ -141,7 +141,14 @@ Notes:
 - Cold start after idle takes a few seconds; add `--min-instances 1` (a few dollars a month) for
   a demo where the first call must connect instantly.
 - Grant the service's runtime service account `roles/secretmanager.secretAccessor`.
-- Point the Twilio number's Voice webhook at `POST https://<service-url>/twiml`. `GET /healthz`
+- **Fresh project?** Before the first deploy, enable the Compute Engine API
+  (`gcloud services enable compute.googleapis.com`). It creates the default compute service
+  account, which both the secret binding and Cloud Run's source build depend on; without it you get
+  `Service account ...-compute@developer.gserviceaccount.com does not exist` and a
+  `PERMISSION_DENIED` build failure. Then grant that account (`<project-number>-compute@developer.gserviceaccount.com`)
+  `roles/secretmanager.secretAccessor`, `roles/run.builder`, `roles/logging.logWriter`,
+  `roles/artifactregistry.writer`, and `roles/storage.objectViewer`.
+- Point the Twilio number's Voice webhook at `POST https://<service-url>/twiml`. `GET /health`
   is unauthenticated and does no work.
 
 ## Disclaimer
