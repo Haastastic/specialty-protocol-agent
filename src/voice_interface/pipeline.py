@@ -19,12 +19,15 @@ Q&A still lands in session["messages"], it just never reaches the caller's ears.
 system would want a genuinely cancellable client call here instead."""
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import Protocol
 
 from .latency import LatencyTracker
 from .stt import SpeechToText
 from .tts import AudioChunk, TextToSpeech
+
+logger = logging.getLogger(__name__)
 
 
 class RespondingAgent(Protocol):
@@ -68,6 +71,19 @@ class VoiceCallPipeline:
         self._turn_task = asyncio.create_task(self._run_turn(event.text, turn_id))
 
     async def _run_turn(self, utterance: str, turn_id: int) -> None:
+        """Runs one turn. A failure in the agent call or TTS (an ElevenLabs 402, a network error)
+        is logged and still ends the turn with "turn_done" - otherwise the exception would die
+        unretrieved inside this fire-and-forget task, leaving the caller in silence with nothing
+        in the logs tied to the call. There's deliberately no spoken fallback: when TTS is the
+        thing that failed, a spoken apology would fail the same way."""
+        try:
+            await self._process_turn(utterance, turn_id)
+        except Exception:
+            logger.exception("Turn %d failed; ending it without a reply", turn_id)
+            if turn_id == self._active_turn_id:  # a superseded turn's failure is moot
+                await self.outbound.put(OutboundEvent(kind="turn_done"))
+
+    async def _process_turn(self, utterance: str, turn_id: int) -> None:
         turn = self.latency.start_turn()
         self.latency.mark(turn, "stt_final")
 
