@@ -104,7 +104,45 @@ latency report checked against budget (`src/voice_interface/latency.py`).
 **Pointing a real Twilio number at it:** set `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY`, and
 `ELEVENLABS_VOICE_ID` in `.env`, run `uvicorn src.voice_interface.media_stream_server:app`
 (tunnel it with e.g. `ngrok http 8000` for local testing, since Twilio needs a public HTTPS/WSS
-endpoint), then point the number's Voice webhook at `POST https://<your-host>/twiml`.
+endpoint), then point the number's Voice webhook at `POST https://<your-host>/twiml`. Requests are
+signature-checked, so also set `TWILIO_AUTH_TOKEN` (or `TWILIO_SKIP_SIGNATURE_CHECK=1` for local
+testing only). To host it instead of tunneling, see "Deploying to Cloud Run" below.
+
+## Deploying to Cloud Run
+
+Cloud Run gives a public HTTPS/WSS URL with no tunnel, scales to zero between calls, and a demo's
+traffic sits inside its free tier. The `Dockerfile` ships only `src/`, `protocols/`, and the
+few-shot library; `.env` is excluded from the image, so keys go in as secrets.
+
+**Signature validation.** `/twiml` and `/media-stream` reject any request without a valid
+`X-Twilio-Signature` (checked against `TWILIO_AUTH_TOKEN`), so strangers can't spend your
+Deepgram/ElevenLabs/Anthropic credits. It fails closed: a missing token rejects everything. For
+local-only testing, `TWILIO_SKIP_SIGNATURE_CHECK=1` disables the check — never set it on a public
+deployment.
+
+```bash
+# one-time: create secrets from your .env values
+for name in ANTHROPIC_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_VOICE_ID TWILIO_AUTH_TOKEN; do
+  printf "%s" "<value>" | gcloud secrets create $name --data-file=-
+done
+
+gcloud run deploy specialty-protocol-agent \
+  --source . --region us-central1 --allow-unauthenticated \
+  --timeout 3600 --max-instances 2 --concurrency 10 --memory 512Mi \
+  --set-secrets ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,DEEPGRAM_API_KEY=DEEPGRAM_API_KEY:latest,ELEVENLABS_API_KEY=ELEVENLABS_API_KEY:latest,ELEVENLABS_VOICE_ID=ELEVENLABS_VOICE_ID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest
+```
+
+Notes:
+
+- `--allow-unauthenticated` is required because Twilio can't present Google credentials; the
+  signature check above is what protects the service.
+- `--timeout 3600` lets a call's WebSocket stay open up to an hour. `--max-instances` and
+  `--concurrency` cap simultaneous calls, and so your worst-case spend.
+- Cold start after idle takes a few seconds; add `--min-instances 1` (a few dollars a month) for
+  a demo where the first call must connect instantly.
+- Grant the service's runtime service account `roles/secretmanager.secretAccessor`.
+- Point the Twilio number's Voice webhook at `POST https://<service-url>/twiml`. `GET /healthz`
+  is unauthenticated and does no work.
 
 ## Disclaimer
 

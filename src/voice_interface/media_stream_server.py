@@ -7,11 +7,15 @@ _stt_factory()/_tts_factory() default to the real DeepgramSTT/ElevenLabsTTS adap
 DEEPGRAM_API_KEY/ELEVENLABS_API_KEY (and ELEVENLABS_VOICE_ID) set — see .env.example. Swap either
 factory back to MockSTT/MockTTS for local testing without vendor accounts (simulate_call.py does
 this already).
+
+/twiml and /media-stream verify Twilio's X-Twilio-Signature using TWILIO_AUTH_TOKEN and reject
+anything unsigned. Set TWILIO_SKIP_SIGNATURE_CHECK=1 to bypass that for local testing only.
 """
 
 import asyncio
 import base64
 import json
+import logging
 import os
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -22,7 +26,10 @@ from src.protocol_agent.agent import ProtocolAgent
 from .pipeline import RespondingAgent, VoiceCallPipeline
 from .stt import DeepgramSTT, SpeechToText
 from .tts import ElevenLabsTTS, TextToSpeech
+from .twilio_auth import is_valid_signature, signature_check_enabled
 from .twiml import stream_twiml
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -44,14 +51,36 @@ def _tts_factory() -> TextToSpeech:
     return ElevenLabsTTS(voice_id=os.environ["ELEVENLABS_VOICE_ID"])
 
 
+def _signature_ok(headers, host: str, path: str, params: dict[str, str] | None = None) -> bool:
+    if not signature_check_enabled():
+        return True
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    if not auth_token:
+        logger.error("TWILIO_AUTH_TOKEN is not set; rejecting request (or set TWILIO_SKIP_SIGNATURE_CHECK=1)")
+        return False
+    urls = [f"https://{host}{path}", f"wss://{host}{path}"]
+    return is_valid_signature(auth_token, headers.get("x-twilio-signature"), urls, params)
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.post("/twiml")
 async def twiml(request: Request) -> Response:
+    form = {k: str(v) for k, v in (await request.form()).items()}
+    if not _signature_ok(request.headers, request.url.netloc, request.url.path, form):
+        return Response(status_code=403, content="Invalid Twilio signature")
     ws_url = f"wss://{request.url.netloc}/media-stream"
     return Response(content=stream_twiml(ws_url), media_type="application/xml")
 
 
 @app.websocket("/media-stream")
 async def media_stream(websocket: WebSocket) -> None:
+    if not _signature_ok(websocket.headers, websocket.url.netloc, websocket.url.path):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     stream_sid: str | None = None
     pipeline: VoiceCallPipeline | None = None
