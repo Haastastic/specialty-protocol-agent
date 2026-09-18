@@ -131,5 +131,5 @@ def test_media_stream_accepts_signed_handshake(enforce_signature_check):
         ws.send_text(json.dumps({"event": "stop", "streamSid": "MZ123"}))
 
 
-def test_healthz_needs_no_signature(enforce_signature_check):
-    assert TestClient(media_stream_server.app).get("/healthz").json() == {"status": "ok"}
+def test_health_needs_no_signature(enforce_signature_check):
+    assert TestClient(media_stream_server.app).get("/health").json() == {"status": "ok"}
